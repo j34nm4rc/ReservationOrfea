@@ -88,6 +88,23 @@ public class BddAdc {
     public static int taille() {
         return nomAdc.size();
     }
+    
+    public int verifCp(String numCp)
+    {
+        for (int i=0; i<taille();++i)
+        {
+            if(numCp.equals(cpAdc.get(i))) { return i; }
+        }
+        return 99999999;
+    }
+
+    public String getNom(int index) {
+        return nomAdc.get(index);
+    }
+
+    public String getPrenom(int index) {
+        return prenomAdc.get(index);
+    }
 
 
 }

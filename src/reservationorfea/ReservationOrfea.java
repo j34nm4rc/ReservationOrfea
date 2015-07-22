@@ -16,6 +16,7 @@
  */
 package reservationorfea;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
@@ -67,8 +68,18 @@ public class ReservationOrfea {
 
             switch (choix) {
                 case 'a':
-                    String lectNomAdc;
-                    String lectPrenomAdc;
+                    ArrayList<String> nomAdc = new ArrayList<String>();
+                    ArrayList<String> prenomAdc = new ArrayList<String>();
+                    ArrayList<String> cpAdc = new ArrayList<String>();
+                    ArrayList<String> villeArrivee = new ArrayList<String>();
+                    //ArrayList<String> villeDepart = new ArrayList<String>();
+                    ArrayList<String> heureArrivee = new ArrayList<String>();
+                    ArrayList<String> heureDepart = new ArrayList<String>();
+                    ArrayList<String> jsArrivee = new ArrayList<String>();
+                    ArrayList<String> jsDepart = new ArrayList<String>();
+                    ArrayList<String> dateArriveeAdc = new ArrayList<String>();
+                    ArrayList<String> dateDepartAdc = new ArrayList<String>();
+                    
                     String lectCpAdc;
                     String lectDateNuitee;
                     String lectVilleArrivee = null;
@@ -79,26 +90,43 @@ public class ReservationOrfea {
 
                     boolean boucleOk = false;
                     boolean confTaille = false;
-
                     do {
-                        lectNomAdc = saisieADC("Nom");
-                        lectPrenomAdc = saisieADC("Prenom");
-                        do {
-                            lectCpAdc = saisieADC("n° de CP");
-                            if (lectCpAdc.length() == 8) {
-                                confTaille = true;
+                        System.out.println("La réservation concerne combien d'agent(s): ");
+                        int nbAgent = lectClavier.nextInt();
+                        lectClavier.nextLine();
+                        for (int i=0; i<nbAgent; ++i) {
+                            do {
+                                lectCpAdc = saisieADC("Entrez le n° de CP");
+                                if (lectCpAdc.length() == 8) {
+                                    confTaille = true;
+                                } else {
+                                    System.out.println("Attention, saisie sur 8 caracteres (7 chiffres + 1 lettre):");
+                                }
+                            } while (!confTaille);
+
+                            int index = bddAdc.verifCp(lectCpAdc);
+
+                            if (index == 99999999) {
+                                System.out.println("L'agent n'est pas connu dans la base");
+                                cpAdc.add(lectCpAdc);
+                                nomAdc.add(saisieADC("Nom"));
+                                prenomAdc.add(saisieADC("Prenom"));
                             } else {
-                                System.out.println("Attention, saisie sur 8 caracteres (7 chiffres + 1 lettre):");
+                                cpAdc.add(lectCpAdc);
+                                nomAdc.add(bddAdc.getNom(index));
+                                prenomAdc.add(bddAdc.getPrenom(index));
+                                System.out.println("Nom: " + nomAdc.get(nomAdc.size()-1));
+                                System.out.println("Prenom: " + prenomAdc.get(prenomAdc.size()-1));
                             }
-                        } while (!confTaille);
-                        
+                        }
+
                         boolean loopOk = false;
 
-                        do { 
-                            System.out.print("Entrez la date d'arrivee de l'agent (ex: 01/01/2015): ");
+                        do {
+                            System.out.print("Entrez la date d'arrivee (ex: 01/01/2015): ");
                             lectDateNuitee = lectClavier.nextLine();
                             if (lectDateNuitee.length() != 10) {
-                                    System.out.println("La date doit etre sous la forme dd/mm/aaaa (ex: 12/12/2015) : ");
+                                System.out.println("La date doit etre sous la forme dd/mm/aaaa (ex: 12/12/2015) : ");
                             } else {
                                 loopOk = true;
                             }
@@ -110,8 +138,11 @@ public class ReservationOrfea {
                             lectClavier.nextLine();
                             if (lectNbNuit < 0) {
                                 System.out.println("Attention, le nombre de nuit doit être superieur a 0 !");
-                                boucleOk = false;
-                            } else {
+                                boucleOk = false; } 
+                            else if(lectNbNuit == 0) {
+                                lectNbNuit = 1;
+                                boucleOk = true; } 
+                            else {
                                 boucleOk = true;
                             }
                         } while (lectNbNuit < 1);
@@ -120,7 +151,7 @@ public class ReservationOrfea {
 
                     DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy");
                     LocalDate dateArrivee = LocalDate.parse(lectDateNuitee, formatter);
-                    LocalDate dateArr, dateDepart;
+                    LocalDate dateArr, dateDep;
 
                     boolean compoIdem = false;
                     boolean question = false;
@@ -159,19 +190,35 @@ public class ReservationOrfea {
                         }
 
                         dateArr = dateArrivee.plusDays(i - 1);
-                        dateDepart = dateArr.plusDays(1);
-
-                        donnees.ajout(lectNomAdc,
-                                lectPrenomAdc,
-                                lectCpAdc,
-                                lectVilleArrivee,
-                                dateArr.toString("dd/MM/yyyy"),
-                                lectHeureArrivee,
-                                lectJsArrivee,
-                                dateDepart.toString("dd/MM/yyyy"),
-                                lectHeureDepart,
-                                lectJsDepart);
+                        dateDep = dateArr.plusDays(1);
+                        
+                        villeArrivee.add(lectVilleArrivee);
+                        dateArriveeAdc.add(dateArr.toString("dd/MM/yyyy"));
+                        heureArrivee.add(lectHeureArrivee);
+                        jsArrivee.add(lectJsArrivee);
+                        dateDepartAdc.add(dateDep.toString("dd/MM/yyyy"));
+                        heureDepart.add(lectHeureDepart);
+                        jsDepart.add(lectJsDepart);
                     }
+                    int nbEnr = 0;
+                    for(int i=0; i<nomAdc.size();++i)
+                    {
+                        for(int j=0; j<villeArrivee.size(); ++j)
+                        {
+                            donnees.ajout(nomAdc.get(i),
+                                    prenomAdc.get(i),
+                                    cpAdc.get(i),
+                                    villeArrivee.get(j),
+                                    dateArriveeAdc.get(j),
+                                    heureArrivee.get(i),
+                                    jsArrivee.get(j),
+                                    dateDepartAdc.get(j),
+                                    heureDepart.get(j),
+                                    jsDepart.get(j));
+                            nbEnr++;
+                        }
+                    }
+                    System.out.println("Ajout de "+nbEnr+" élément(s).");
                     afficheTaille();
                     svgTmp();
                     break;
